@@ -1,0 +1,108 @@
+name: Build ARDUOUS SCOPE APK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Android project
+        run: npx cap add android
+
+      - name: Apply native display and immersive settings
+        shell: bash
+        run: |
+          ACTIVITY="android/app/src/main/java/com/arduous/scope/MainActivity.java"
+          mkdir -p "$(dirname "$ACTIVITY")"
+          cat > "$ACTIVITY" <<'JAVA'
+          package com.arduous.scope;
+
+          import android.os.Bundle;
+          import android.view.View;
+          import android.view.WindowManager;
+          import android.view.Display;
+          import android.view.WindowManager.LayoutParams;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+            @Override
+            public void onCreate(Bundle savedInstanceState) {
+              super.onCreate(savedInstanceState);
+              getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+              requestHighestRefreshRate();
+              applyImmersiveMode();
+            }
+
+            private void requestHighestRefreshRate() {
+              try {
+                Display display = getWindowManager().getDefaultDisplay();
+                Display.Mode current = display.getMode();
+                Display.Mode best = current;
+                for (Display.Mode mode : display.getSupportedModes()) {
+                  if (mode.getPhysicalWidth() == current.getPhysicalWidth()
+                      && mode.getPhysicalHeight() == current.getPhysicalHeight()
+                      && mode.getRefreshRate() > best.getRefreshRate()) {
+                    best = mode;
+                  }
+                }
+                LayoutParams attrs = getWindow().getAttributes();
+                attrs.preferredDisplayModeId = best.getModeId();
+                getWindow().setAttributes(attrs);
+              } catch (Exception ignored) { }
+            }
+
+            private void applyImmersiveMode() {
+              getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                  | View.SYSTEM_UI_FLAG_FULLSCREEN
+                  | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                  | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                  | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                  | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+              );
+            }
+
+            @Override
+            public void onWindowFocusChanged(boolean hasFocus) {
+              super.onWindowFocusChanged(hasFocus);
+              if (hasFocus) applyImmersiveMode();
+            }
+          }
+          JAVA
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ARDUOUS_SCOPE_debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
