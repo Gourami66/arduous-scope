@@ -1,0 +1,8 @@
+{
+  "appId": "com.arduous.scope",
+  "appName": "ARDUOUS SCOPE",
+  "webDir": "web",
+  "server": {
+    "androidScheme": "https"
+  }
+}
