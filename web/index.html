@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0A0C0B">
+<title>ARDUOUS // Wavetable Lab</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+:root{--bg:#0A0C0B;--p1:#0E1311;--p2:#121815;--p3:#18201C;--line:#28392F;--muted:#7E8C85;--soft:#B9C6BF;--white:#F2EEEA;--green:#46E5A0;--coral:#FF7A9C;--blue:#7C8FFF;--gold:#FFD166}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--white);font-family:'JetBrains Mono',monospace;min-height:100vh}
+header{height:64px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:#0b100d;position:sticky;top:0;z-index:5}
+.brand{font:900 20px Orbitron,sans-serif;letter-spacing:2px;background:linear-gradient(100deg,var(--green),var(--coral),var(--blue));color:transparent;background-clip:text}
+.subbrand{font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:3px}.live{font-size:10px;color:var(--green);border:1px solid #285c43;padding:7px 9px;border-radius:4px}
+main{max-width:1120px;margin:auto;padding:18px;display:grid;gap:14px;grid-template-columns:minmax(0,1.45fr) minmax(280px,.8fr)}
+.panel{background:var(--p1);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--line);font:700 11px Orbitron,sans-serif;letter-spacing:1px}
+.kicker{font-size:9px;color:var(--muted);font-family:'JetBrains Mono';letter-spacing:.5px}
+.visual-wrap{padding:12px}.visual{height:340px;position:relative;background:radial-gradient(ellipse at 50% 50%,#14221a,#090d0b 70%);border:1px solid #1b2a21;border-radius:5px;overflow:hidden}
+canvas{width:100%;height:100%;display:block}.frame-pill{position:absolute;right:10px;top:10px;background:#0b100de8;border:1px solid var(--line);border-radius:4px;padding:7px 9px;font-size:10px;color:var(--green)}
+.mode-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+button,select,input{font:600 11px 'JetBrains Mono';color:var(--soft);background:#121a15;border:1px solid var(--line);border-radius:4px;min-height:38px}
+button{cursor:pointer;padding:8px 10px}button:hover{border-color:#537361;color:var(--white)}button.active{background:#153225;border-color:var(--green);color:var(--green);box-shadow:inset 0 0 0 1px #46e5a022}
+button.primary{background:var(--green);color:#07120c;border-color:var(--green);font-weight:800}button:active{transform:translateY(1px)}
+.controls{padding:14px;display:grid;gap:14px}
+.section-title{font:700 10px Orbitron;letter-spacing:1.2px;color:var(--soft);margin-bottom:9px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}
+.control{display:grid;gap:6px;min-width:0}.control label{font-size:9px;color:var(--muted);letter-spacing:.6px}
+select{padding:0 9px;width:100%}input[type=range]{width:100%;height:28px;accent-color:var(--green);background:transparent;border:0}
+.value{font-size:12px;color:var(--green);font-weight:700}
+.transport{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.transport button{min-height:43px}
+.note-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.note-grid .control{background:var(--p2);padding:9px;border:1px solid #202e26;border-radius:5px}
+.readout{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.readout div{padding:9px;background:var(--p2);border:1px solid #202e26;border-radius:5px}
+.readout small{display:block;color:var(--muted);font-size:8px;margin-bottom:5px}.readout strong{font-size:12px;color:var(--white)}
+.footer{grid-column:1/-1;color:var(--muted);font-size:9px;line-height:1.7;padding:3px 2px}
+.status{font-size:9px;color:var(--muted);min-height:14px}.toggle{display:flex;gap:7px;align-items:center;font-size:10px;color:var(--soft)}.toggle input{accent-color:var(--green);min-height:auto}
+@media(max-width:760px){main{grid-template-columns:1fr;padding:10px;gap:10px}.visual{height:270px}.mode-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.mode-grid button{font-size:9px;padding:7px 2px;min-height:36px}.panel-head{padding:12px}.controls{padding:12px}.footer{grid-column:auto}header{height:58px;padding:0 12px}}
+</style>
+</head>
+<body>
+<header><div><div class="brand">ARDUOUS</div><div class="subbrand">WAVETABLE LAB / SHOWCASE PREVIEW</div></div><div class="live">● LIVE DEMO</div></header>
+<main>
+<section class="panel">
+ <div class="panel-head"><span>WAVETABLE VISUALIZER</span><span class="kicker">256 FRAMES / 2048 SAMPLES</span></div>
+ <div class="visual-wrap">
+  <div class="visual"><canvas id="viz"></canvas><div class="frame-pill">FRAME <b id="frameRead">000</b> / 255</div></div>
+  <div class="mode-grid" id="modes">
+   <button data-mode="STACK" class="active">STACK</button><button data-mode="GHOST">GHOST</button><button data-mode="SPECTRUM">SPECTRUM</button><button data-mode="CONTOUR">CONTOUR</button><button data-mode="DIFFERENCE">DIFF</button>
+   <button data-mode="POLAR">POLAR</button><button data-mode="SLAB">SLAB</button><button data-mode="MESH">MESH</button><button data-mode="SLICES">SLICES</button><button data-mode="HEAT">HEAT</button>
+  </div>
+ </div>
+</section>
+<aside class="panel">
+ <div class="panel-head"><span>WAVETABLE SHOWCASE</span><span class="kicker">AUDIO + MOTION</span></div>
+ <div class="controls">
+  <div><div class="section-title">TRANSPORT</div><div class="transport">
+   <button id="play" class="primary">▶ PLAY</button><button id="pause">Ⅱ PAUSE</button><button id="restart">↺ RESTART</button>
+  </div></div>
+  <div class="note-grid">
+   <div class="control"><label>PLAYBACK NOTE</label><select id="note"><option value="36">C2</option><option value="40">E2</option><option value="43">G2</option><option value="48" selected>C3</option><option value="52">E3</option><option value="55">G3</option><option value="60">C4</option><option value="64">E4</option><option value="67">G4</option><option value="72">C5</option></select></div>
+   <div class="control"><label>SCAN DIRECTION</label><select id="direction"><option value="forward">FORWARD</option><option value="reverse">REVERSE</option><option value="pingpong">PING-PONG</option></select></div>
+  </div>
+  <div class="row">
+   <div class="control"><label>TEMPO</label><div class="row"><input id="bpm" type="range" min="60" max="200" value="140"><span class="value" id="bpmVal">140 BPM</span></div></div>
+  </div>
+  <div class="row">
+   <div class="control"><label>SCAN LENGTH</label><select id="bars"><option>¼</option><option>½</option><option>1</option><option>2</option><option selected>4</option><option>8</option><option>16</option><option>32</option></select></div>
+   <div class="control"><label>LOOP MODE</label><select id="loop"><option value="loop">LOOP</option><option value="once">ONE-SHOT</option></select></div>
+  </div>
+  <div class="control"><label>START / END FRAME</label><div class="row"><input id="start" type="range" min="0" max="254" value="0"><span class="value" id="rangeVal">0 → 255</span><input id="end" type="range" min="1" max="255" value="255"></div></div>
+  <div class="control"><label>DEMO VOLUME <span class="value" id="volVal">−12 dB</span></label><input id="volume" type="range" min="-36" max="0" value="-12"></div>
+  <div class="control"><label>VISUAL MOTION</label><select id="camera"><option value="follow">FOLLOW SCAN</option><option value="orbit">ORBIT CAMERA</option><option value="pulse">PULSE</option><option value="static">STATIC</option></select></div>
+  <label class="toggle"><input type="checkbox" id="hold" checked> HOLD NOTE WHILE SCANNING</label>
+  <div class="readout"><div><small>FRAME</small><strong id="frameStat">000</strong></div><div><small>SCAN TIME</small><strong id="timeStat">6.86s</strong></div><div><small>STATE</small><strong id="stateStat">STOPPED</strong></div></div>
+  <div class="status" id="status">Ready. Press PLAY to start the wavetable scan and audio.</div>
+ </div>
+</aside>
+<div class="footer">INTERACTIVE CONCEPT BUILD · Audio is generated locally in your browser using Web Audio. This is a standalone showcase prototype, not yet connected to ARDUOUS production audio or wavetable state. MP4/GIF export and MIDI input are not included in this preview.</div>
+</main>
+<script>
+(()=>{
+const $=id=>document.getElementById(id),canvas=$('viz'),ctx=canvas.getContext('2d');
+let mode='STACK',frame=0,playing=false,startedAt=0,pausedAt=0,raf=0,audio=null,osc=null,gain=null,table=null,orbit=0;
+const N=2048,FRAMES=256;
+function waveAt(f){
+ const t=f/255, a=1+Math.floor(t*7), b=1+Math.floor((1-t)*4);
+ const morph=t*2*Math.PI;
+ const out=new Float32Array(N);
+ for(let i=0;i<N;i++){let p=i/N*Math.PI*2;let v=0;
+  v+=Math.sin(p);
+  v+=(.42*Math.sin(p*2+Math.sin(morph)*.7))/(1+a*.13);
+  v+=(.24*Math.sin(p*3+morph))/(1+b*.18);
+  v+=(.12*Math.sin(p*5-morph*.7));
+  v+=(.07*Math.sin(p*7+Math.cos(morph)));
+  v+=.06*Math.sin(p*(2+Math.floor(t*10)))*Math.sin(morph*.5);
+  out[i]=v;
+ }
+ let peak=0;for(const x of out)peak=Math.max(peak,Math.abs(x));
+ for(let i=0;i<N;i++)out[i]/=peak||1;
+ return out;
+}
+const waves=Array.from({length:FRAMES},(_,i)=>waveAt(i));
+function size(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0);draw()}
+function pathWave(samples,x,y,w,h,color,width=1.5,alpha=1){ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();for(let i=0;i<samples.length;i++){let xx=x+i/(samples.length-1)*w,yy=y+h/2-samples[i]*h*.43;i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy)}ctx.stroke();ctx.restore()}
+function draw(){
+ const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;ctx.clearRect(0,0,w,h);
+ ctx.strokeStyle='#17251d';ctx.lineWidth=1;for(let i=1;i<8;i++){let x=i*w/8;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}for(let i=1;i<5;i++){let y=i*h/5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+ const cur=waves[Math.round(frame)],green='#46E5A0',coral='#FF7A9C',blue='#7C8FFF';
+ const line=(samples,color,alpha=1,thick=1.4)=>pathWave(samples,18,h*.16,w-36,h*.66,color,thick,alpha);
+ if(mode==='STACK'||mode==='SLAB'||mode==='MESH'||mode==='SLICES'){
+  const count=mode==='SLICES'?9:mode==='SLAB'?12:mode==='MESH'?24:18;
+  for(let j=count-1;j>=0;j--){let f=Math.round(j/(count-1)*255),s=waves[f],yy=h*.14+j*(h*.66/count*.34);let col=j%3===0?green:j%3===1?coral:blue;
+   if(mode==='MESH'){ctx.strokeStyle='#294033';ctx.beginPath();ctx.moveTo(18,yy+h*.025);ctx.lineTo(w-18,yy+h*.025);ctx.stroke()}
+   pathWave(s,18+j*1.4,yy,w-36-j*2.8,h*.28,col,mode==='SLICES'?1.5:.8,.18+j/count*.25);
+  }line(cur,green,1,2.3);
+ }else if(mode==='GHOST'){
+  for(let d=-5;d<=5;d++){let f=Math.max(0,Math.min(255,Math.round(frame+d*5)));line(waves[f],d===0?green:d<0?coral:blue,d===0?1:.12+(.08/(Math.abs(d)||1)),d===0?2.6:1)}
+ }else if(mode==='SPECTRUM'){
+  const bins=48,bw=(w-42)/bins;for(let k=1;k<=bins;k++){let re=0,im=0,s=cur;for(let n=0;n<256;n++){let a=2*Math.PI*k*n/256;re+=s[n]*Math.cos(a);im+=s[n]*Math.sin(a)}let mag=Math.sqrt(re*re+im*im)/128,hh=Math.min(h*.66,mag*h*.48);ctx.fillStyle=k%3===0?coral:k%3===1?green:blue;ctx.globalAlpha=.35+Math.min(.65,mag);ctx.fillRect(21+(k-1)*bw,h*.84-hh,bw*.66,hh)}ctx.globalAlpha=1;
+ }else if(mode==='DIFFERENCE'){
+  let prev=waves[Math.max(0,Math.round(frame)-1)];const cols=72,rows=28,cw=(w-36)/cols,ch=(h-30)/rows;for(let x=0;x<cols;x++)for(let y=0;y<rows;y++){let i=Math.floor(x/cols*N),a=cur[i],b=prev[i],d=Math.min(1,Math.abs(a-b)*2.7);ctx.fillStyle=d>.5?coral:green;ctx.globalAlpha=.08+d*.75;ctx.fillRect(18+x*cw,15+y*ch,cw+.4,ch+.4)}ctx.globalAlpha=1;line(cur,green,.9,1.3);
+ }else if(mode==='POLAR'){
+  const cx=w/2,cy=h/2,r=Math.min(w,h)*.31;ctx.strokeStyle='#26382d';ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();for(let k=0;k<cur.length;k+=2){let a=k/N*Math.PI*2,rr=r+cur[k]*r*.45,x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;k?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.strokeStyle=green;ctx.lineWidth=2;ctx.shadowColor=green;ctx.shadowBlur=10;ctx.stroke();ctx.shadowBlur=0;
+ }else if(mode==='CONTOUR'||mode==='HEAT'){
+  const rows=mode==='HEAT'?32:18;for(let j=0;j<rows;j++){let f=Math.round(j/(rows-1)*255),s=waves[f],yy=12+j*(h-24)/rows;ctx.strokeStyle=mode==='HEAT'?`rgba(70,229,160,${.08+j/rows*.4})`:`rgba(124,143,255,${.13+j/rows*.55})`;ctx.beginPath();for(let i=0;i<s.length;i+=4){let x=18+i/N*(w-36),y=yy+(mode==='HEAT'?0:-s[i]*h*.09);i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}line(cur,green,1,2);
+ }
+ // current frame cursor and baseline
+ ctx.strokeStyle='#46E5A055';ctx.setLineDash([3,5]);ctx.beginPath();ctx.moveTo(18,h*.88);ctx.lineTo(w-18,h*.88);ctx.stroke();ctx.setLineDash([]);
+ $('frameRead').textContent=String(Math.round(frame)).padStart(3,'0');$('frameStat').textContent=String(Math.round(frame)).padStart(3,'0');
+}
+function initAudio(){
+ if(audio)return;audio=new (window.AudioContext||window.webkitAudioContext)();osc=audio.createOscillator();gain=audio.createGain();osc.type='sawtooth';gain.gain.value=0;osc.connect(gain).connect(audio.destination);osc.start();setNote();
+}
+function setNote(){if(!audio||!osc)return;let midi=+$('note').value,freq=440*Math.pow(2,(midi-69)/12);osc.frequency.setTargetAtTime(freq,audio.currentTime,.025)}
+function updateWave(){if(!audio||!osc)return;let real=new Float32Array(64),imag=new Float32Array(64);let s=waves[Math.round(frame)];for(let k=1;k<64;k++){let re=0,im=0;for(let n=0;n<N;n+=8){let a=2*Math.PI*k*n/N;re+=s[n]*Math.cos(a);im+=s[n]*Math.sin(a)}real[k]=0;imag[k]=2*im/(N/8)}let pw=audio.createPeriodicWave(real,imag,{disableNormalization:false});osc.setPeriodicWave(pw)}
+function scanSeconds(){return (+$('bars').value||4)*4*60/(+$('bpm').value)}
+function updateStats(){$('timeStat').textContent=scanSeconds().toFixed(2)+'s';$('bpmVal').textContent=$('bpm').value+' BPM';$('rangeVal').textContent=$('start').value+' → '+$('end').value;$('volVal').textContent=$('volume').value+' dB'}
+function start(){initAudio();audio.resume();setNote();playing=true;startedAt=performance.now()-(pausedAt||0);$('stateStat').textContent='PLAYING';$('status').textContent='Scanning wavetable in sync with the selected bar length.';const db=+$('volume').value;gain.gain.setTargetAtTime(Math.pow(10,db/20),audio.currentTime,.04);tick()}
+function stop(){playing=false;cancelAnimationFrame(raf);pausedAt=0;if(gain&&audio)gain.gain.setTargetAtTime(0,audio.currentTime,.04);$('stateStat').textContent='STOPPED'}
+function tick(now=performance.now()){
+ if(!playing)return;let elapsed=(now-startedAt)/1000,dur=scanSeconds(),p=elapsed/dur,dir=$('direction').value,a=+$('start').value,b=+$('end').value;
+ if(p>=1&&$('loop').value==='once'){p=1;playing=false;$('stateStat').textContent='DONE';gain.gain.setTargetAtTime(0,audio.currentTime,.05)}
+ else if($('loop').value==='loop')p=p%1;
+ if(dir==='reverse')p=1-p;else if(dir==='pingpong'){let q=p%2;p=q<=1?q:2-q}
+ frame=a+(b-a)*p;
+ if($('camera').value==='orbit')orbit+=.018;else if($('camera').value==='pulse')orbit=Math.sin(now/180)*.12;
+ draw();updateWave();if(playing)raf=requestAnimationFrame(tick)
+}
+$('modes').addEventListener('click',e=>{let b=e.target.closest('button[data-mode]');if(!b)return;mode=b.dataset.mode;document.querySelectorAll('#modes button').forEach(x=>x.classList.toggle('active',x===b));draw()});
+$('play').onclick=()=>{if(!playing){if(pausedAt){startedAt=performance.now()-pausedAt;pausedAt=0;initAudio();audio.resume();playing=true;gain.gain.setTargetAtTime(Math.pow(10,(+$('volume').value)/20),audio.currentTime,.04);tick()}else start()}};
+$('pause').onclick=()=>{if(playing){pausedAt=performance.now()-startedAt;playing=false;cancelAnimationFrame(raf);gain.gain.setTargetAtTime(0,audio.currentTime,.03);$('stateStat').textContent='PAUSED';$('status').textContent='Paused. Press PLAY to resume.'}};
+$('restart').onclick=()=>{stop();frame=+$('start').value;pausedAt=0;draw();start()};
+$('note').onchange=setNote;
+['bpm','bars','start','end','volume'].forEach(id=>$(id).addEventListener('input',()=>{updateStats();if(id==='volume'&&playing)gain.gain.setTargetAtTime(Math.pow(10,(+$('volume').value)/20),audio.currentTime,.04);if(id==='start'||id==='end')draw()}));
+window.addEventListener('resize',size);updateStats();size();
+})();
+</script>
+</body></html>
